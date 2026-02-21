@@ -1,6 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 
-import Main from "../pages/main";
+import Main from "../pages/Main"; // ✅ fixed case (Linux is case-sensitive)
 import DashboardLayouts from "../components/DashboardLayouts";
 
 import AdminIndex from "../pages/admin/AdminIndex";
@@ -9,7 +9,7 @@ import AdminUsersCreate from "../pages/admin/AdminUsersCreate";
 import ManagerIndex from "../pages/manager/ManagerIndex";
 import WaiterIndex from "../pages/waiters/WaiterIndex";
 
-// ✅ NEW: Property Page
+// ✅ Property Page
 import PropertyPage from "../pages/PropertyPage";
 
 export default function AppRoutes() {
@@ -23,8 +23,6 @@ export default function AppRoutes() {
         {/* Admin */}
         <Route path="/admin" element={<AdminIndex />} />
         <Route path="/admin/users/create" element={<AdminUsersCreate />} />
-
-        {/* ✅ NEW: Property */}
         <Route path="/admin/property" element={<PropertyPage />} />
 
         {/* Manager */}
@@ -34,7 +32,7 @@ export default function AppRoutes() {
         <Route path="/waiter" element={<WaiterIndex />} />
       </Route>
 
-      {/* Optional: redirect unknown pages */}
+      {/* Redirect unknown pages */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
