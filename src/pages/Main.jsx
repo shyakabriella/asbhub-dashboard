@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 export default function Main() {
   const [showPass, setShowPass] = useState(false);
 
-  // ✅ Email or phone (no default value)
+  // ✅ Email or phone
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(true);
@@ -14,11 +14,15 @@ export default function Main() {
 
   const navigate = useNavigate();
 
+  // ✅ support both env names
   const API_URL = useMemo(() => {
-    return (import.meta.env.VITE_API_URL || "http://127.0.0.1:8000").replace(
-      /\/$/,
-      ""
-    );
+    const raw =
+      import.meta.env.VITE_API_URL ||
+      import.meta.env.VITE_API_BASE_URL ||
+      "http://127.0.0.1:8000";
+
+    // if user sets VITE_API_BASE_URL=http://.../api, remove /api for login route builder below
+    return raw.replace(/\/api\/?$/, "").replace(/\/$/, "");
   }, []);
 
   const redirectByRole = (role) => {
@@ -31,12 +35,27 @@ export default function Main() {
     return navigate("/admin", { replace: true });
   };
 
-  // ✅ simple validators
   const isEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
   const isPhone = (v) => {
-    // accepts: 078..., +25078..., 25078..., and digits/spaces
     const cleaned = v.replace(/\s+/g, "");
     return /^[+]?\d{9,15}$/.test(cleaned);
+  };
+
+  const saveAuth = ({ token, user, remember }) => {
+    const primary = remember ? localStorage : sessionStorage;
+    const secondary = remember ? sessionStorage : localStorage;
+
+    // Clear old values from the other storage to avoid confusion
+    secondary.removeItem("access_token");
+    secondary.removeItem("auth_token");
+    secondary.removeItem("auth_user");
+    secondary.removeItem("remember_auth");
+
+    // ✅ Save new auth data
+    primary.setItem("access_token", token); // standard key
+    primary.setItem("auth_token", token);   // backward compatibility
+    primary.setItem("auth_user", JSON.stringify(user));
+    primary.setItem("remember_auth", remember ? "1" : "0");
   };
 
   const onSubmit = async (e) => {
@@ -49,13 +68,13 @@ export default function Main() {
       return;
     }
 
-    // ✅ must be email OR phone
     if (!isEmail(id) && !isPhone(id)) {
       setErrorMsg("Please enter a valid email or phone number.");
       return;
     }
 
     setLoading(true);
+
     try {
       const res = await fetch(`${API_URL}/api/login`, {
         method: "POST",
@@ -63,37 +82,34 @@ export default function Main() {
           Accept: "application/json",
           "Content-Type": "application/json",
         },
-
-        // ✅ send login identifier (email or phone)
         body: JSON.stringify({
           login: id,
-          password: password,
+          password,
         }),
       });
 
       const data = await res.json().catch(() => ({}));
+
+      // Your BaseController usually returns { success, data, message }
       const payload = data?.data || {};
+      const token = payload?.token;
+      const user = payload?.user;
 
       if (!res.ok || data?.success === false) {
         const msg =
           data?.message ||
-          payload?.message ||
           data?.errors?.login?.[0] ||
           data?.errors?.password?.[0] ||
+          data?.errors?.error?.[0] ||
           "Login failed.";
         throw new Error(msg);
       }
 
-      const token = payload?.token;
-      const user = payload?.user;
-
       if (!token || !user) {
-        throw new Error("Login response missing token or user. Please update Laravel response.");
+        throw new Error("Login response missing token or user.");
       }
 
-      const storage = remember ? localStorage : sessionStorage;
-      storage.setItem("auth_token", token);
-      storage.setItem("auth_user", JSON.stringify(user));
+      saveAuth({ token, user, remember });
 
       redirectByRole(user.role);
     } catch (err) {
@@ -191,7 +207,7 @@ export default function Main() {
                       onChange={(e) => setIdentifier(e.target.value)}
                       type="text"
                       autoComplete="username"
-                      placeholder="aphone or email"
+                      placeholder="phone or email"
                       className="w-full rounded-lg border border-gray-200 bg-white px-4 py-3 pr-10 outline-none focus:border-amber-400"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
