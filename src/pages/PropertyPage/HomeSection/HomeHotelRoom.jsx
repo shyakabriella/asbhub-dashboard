@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
-const API_BASE =
-  import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000/api";
-
-const ROOMS_ENDPOINT = `${API_BASE}/admin/property/rooms`;
+// ✅ Build API URLs correctly from .env
+const API_ROOT = (import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000").replace(/\/+$/, "");
+const API_PREFIX = `/${String(import.meta.env.VITE_API_PREFIX || "/api").replace(/^\/+|\/+$/g, "")}`;
+const ROOMS_ENDPOINT = `${API_ROOT}${API_PREFIX}/admin/property/rooms`;
 
 export default function HomeHotelRoom() {
   const [roomsTitle, setRoomsTitle] = useState("Our Rooms");
@@ -48,11 +48,11 @@ export default function HomeHotelRoom() {
 
   const apiOrigin = useMemo(() => {
     try {
-      return new URL(API_BASE).origin;
+      return new URL(API_ROOT).origin;
     } catch {
       return "";
     }
-  }, [API_BASE]);
+  }, []);
 
   // ✅ Read token from both localStorage and sessionStorage
   const getAuthToken = () => {
@@ -97,22 +97,38 @@ export default function HomeHotelRoom() {
     }, 2800);
   };
 
+  // ✅ Convert any backend path to full URL
   const toAbsoluteUrl = (url) => {
-    if (!url) return "";
-    if (url.startsWith("http://") || url.startsWith("https://")) return url;
-    if (url.startsWith("/") && apiOrigin) return `${apiOrigin}${url}`;
-    return url;
+    if (!url || typeof url !== "string") return "";
+
+    // already full URL / blob / data URL
+    if (
+      url.startsWith("http://") ||
+      url.startsWith("https://") ||
+      url.startsWith("blob:") ||
+      url.startsWith("data:")
+    ) {
+      return url;
+    }
+
+    if (!apiOrigin) return url;
+
+    // /storage/rooms/abc.jpg
+    if (url.startsWith("/")) return `${apiOrigin}${url}`;
+
+    // storage/rooms/abc.jpg OR rooms/abc.jpg OR other relative path
+    return `${apiOrigin}/${url.replace(/^\/+/, "")}`;
   };
 
   const normalizeApiRoom = (room) => {
     return {
-      id: room.id,
-      name: room.name || "",
-      description: room.description || "",
+      id: room?.id,
+      name: room?.name || "",
+      description: room?.description || "",
       imageFiles: [],
-      imagePreviews: Array.isArray(room.images)
+      imagePreviews: Array.isArray(room?.images)
         ? room.images
-            .map((img) => toAbsoluteUrl(img.image_url || img.image_path))
+            .map((img) => toAbsoluteUrl(img?.image_url || img?.image_path || ""))
             .filter(Boolean)
         : [],
       isPersisted: true,
@@ -224,9 +240,9 @@ export default function HomeHotelRoom() {
       // ignore
     }
 
-    if (res.status === 401) {
-      return "Unauthorized. Please login again.";
-    }
+    if (res.status === 401) return "Unauthorized. Please login again.";
+    if (res.status === 403) return "Forbidden. You do not have permission.";
+    if (res.status === 404) return "Endpoint not found. Check API URL (/api/admin/property/rooms).";
 
     if (data?.errors && typeof data.errors === "object") {
       const lines = Object.values(data.errors).flat().join("\n");
@@ -245,6 +261,7 @@ export default function HomeHotelRoom() {
     try {
       const res = await fetch(ROOMS_ENDPOINT, {
         method: "GET",
+        credentials: "include", // ✅ works for Sanctum/session auth too
         headers: {
           Accept: "application/json",
           ...authHeaders(),
@@ -310,6 +327,7 @@ export default function HomeHotelRoom() {
     try {
       const res = await fetch(`${ROOMS_ENDPOINT}/${room.id}`, {
         method: "DELETE",
+        credentials: "include",
         headers: {
           Accept: "application/json",
           ...authHeaders(),
@@ -365,6 +383,7 @@ export default function HomeHotelRoom() {
 
         const res = await fetch(ROOMS_ENDPOINT, {
           method: "POST",
+          credentials: "include",
           headers: {
             Accept: "application/json",
             ...authHeaders(),
@@ -411,9 +430,7 @@ export default function HomeHotelRoom() {
             "min-w-[260px] max-w-sm rounded-xl shadow-lg px-4 py-3 text-sm font-medium",
             "transition-all duration-300 ease-out",
             toastStyle[toast.type] || toastStyle.info,
-            toast.open
-              ? "translate-y-0 opacity-100"
-              : "-translate-y-3 opacity-0",
+            toast.open ? "translate-y-0 opacity-100" : "-translate-y-3 opacity-0",
           ].join(" ")}
         >
           {toast.message}
@@ -425,9 +442,7 @@ export default function HomeHotelRoom() {
         className={[
           "fixed inset-0 z-[9998] flex items-center justify-center p-4",
           "transition-all duration-300",
-          roomToDelete
-            ? "opacity-100 pointer-events-auto"
-            : "opacity-0 pointer-events-none",
+          roomToDelete ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
         ].join(" ")}
       >
         <div
@@ -445,9 +460,7 @@ export default function HomeHotelRoom() {
           <h3 className="text-base font-bold text-gray-900">Delete Room</h3>
           <p className="mt-2 text-sm text-gray-600">
             Are you sure you want to delete{" "}
-            <span className="font-semibold text-gray-900">
-              {roomToDelete?.name}
-            </span>
+            <span className="font-semibold text-gray-900">{roomToDelete?.name}</span>
             ? This action cannot be undone.
           </p>
 
