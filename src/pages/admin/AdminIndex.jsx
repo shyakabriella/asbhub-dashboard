@@ -1,9 +1,21 @@
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 const BRAND = {
   purple: "#2F0D34",
   gold: "#BD9F75",
 };
+
+// ✅ API config (env first, safe fallback)
+const API_ROOT = String(
+  import.meta.env.VITE_API_BASE_URL || "https://www.api.ashbhub.com"
+).replace(/\/+$/, "");
+
+const API_PREFIX = `/${String(import.meta.env.VITE_API_PREFIX || "/api").replace(
+  /^\/+|\/+$/g,
+  ""
+)}`;
+
+const ME_ENDPOINT = `${API_ROOT}${API_PREFIX}/me`;
 
 function StatCard({ title, value, subText, icon = "⚡", positive = true }) {
   return (
@@ -23,7 +35,6 @@ function StatCard({ title, value, subText, icon = "⚡", positive = true }) {
           </div>
         </div>
 
-        {/* ✅ softer icon pill (gold border, not heavy yellow) */}
         <div
           className="h-10 w-10 rounded-2xl flex items-center justify-center border"
           style={{
@@ -46,7 +57,6 @@ function Card({ title, children, right }) {
         {right ? right : null}
       </div>
 
-      {/* ✅ tiny accent line */}
       <div
         className="mt-3 h-[2px] w-10 rounded-full"
         style={{ backgroundColor: "rgba(47,13,52,0.15)" }}
@@ -92,7 +102,6 @@ function MiniBarChart() {
 }
 
 function FakePie() {
-  // ✅ softer pro colors (not bright red/green)
   return (
     <div className="flex flex-col sm:flex-row sm:items-center gap-5">
       <div
@@ -124,18 +133,120 @@ function FakePie() {
 }
 
 export default function AdminIndex() {
+  const [userName, setUserName] = useState("Admin");
+  const [updatedAtText, setUpdatedAtText] = useState("");
+
+  const formatUserName = (user) => {
+    if (!user || typeof user !== "object") return "";
+
+    const fullName =
+      user.full_name ||
+      user.name ||
+      user.username ||
+      [user.first_name, user.last_name].filter(Boolean).join(" ").trim();
+
+    return fullName || "";
+  };
+
+  const getAuthToken = () => {
+    try {
+      return (
+        localStorage.getItem("access_token") ||
+        localStorage.getItem("auth_token") ||
+        localStorage.getItem("token") ||
+        sessionStorage.getItem("access_token") ||
+        sessionStorage.getItem("auth_token") ||
+        sessionStorage.getItem("token") ||
+        ""
+      );
+    } catch {
+      return "";
+    }
+  };
+
+  const getStoredUser = () => {
+    const candidateKeys = [
+      "user",
+      "auth_user",
+      "current_user",
+      "logged_in_user",
+      "profile",
+    ];
+
+    for (const key of candidateKeys) {
+      try {
+        const raw =
+          localStorage.getItem(key) ?? sessionStorage.getItem(key) ?? null;
+        if (!raw) continue;
+
+        const parsed = JSON.parse(raw);
+        const name = formatUserName(parsed);
+        if (name) return name;
+      } catch {
+        // ignore broken JSON
+      }
+    }
+
+    return "";
+  };
+
+  const fetchLoggedInUser = async () => {
+    const token = getAuthToken();
+    if (!token) return;
+
+    try {
+      const res = await fetch(ME_ENDPOINT, {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) return;
+
+      const data = await res.json();
+      const user = data?.data || data?.user || null;
+      const name = formatUserName(user);
+
+      if (name) setUserName(name);
+    } catch (err) {
+      console.error("Failed to load logged-in user:", err);
+    }
+  };
+
+  useEffect(() => {
+    // ✅ show local stored user immediately (faster UI)
+    const localName = getStoredUser();
+    if (localName) setUserName(localName);
+
+    // ✅ then confirm from backend /api/me
+    fetchLoggedInUser();
+
+    // ✅ "Today, 10:30 AM" style
+    const now = new Date();
+    const timeText = now.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    setUpdatedAtText(`Today, ${timeText}`);
+  }, []);
+
+  const welcomeText = useMemo(() => {
+    return `Welcome Back ${userName || "Admin"} 👋`;
+  }, [userName]);
+
   return (
     <div className="space-y-5">
       {/* ✅ Welcome (clean, premium) */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 className="text-lg font-bold text-gray-900">
-            Welcome Back Alex Morgan 👋
-          </h2>
-          <p className="text-sm text-gray-500">Updates: Today, 10:30 AM</p>
+          <h2 className="text-lg font-bold text-gray-900">{welcomeText}</h2>
+          <p className="text-sm text-gray-500">
+            Updates: {updatedAtText || "Today"}
+          </p>
         </div>
 
-        {/* ✅ Primary button: purple with gold focus ring */}
         <button
           className="inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold text-white
                      shadow-sm transition hover:brightness-95 active:brightness-90
@@ -184,11 +295,17 @@ export default function AdminIndex() {
 
       {/* Charts */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-        <Card title="Revenue Generation" right={<span className="text-xs text-gray-400">⋯</span>}>
+        <Card
+          title="Revenue Generation"
+          right={<span className="text-xs text-gray-400">⋯</span>}
+        >
           <MiniBarChart />
         </Card>
 
-        <Card title="Request Analysis" right={<span className="text-xs text-gray-400">⋯</span>}>
+        <Card
+          title="Request Analysis"
+          right={<span className="text-xs text-gray-400">⋯</span>}
+        >
           <FakePie />
         </Card>
       </div>
@@ -208,10 +325,26 @@ export default function AdminIndex() {
         >
           <div className="space-y-3">
             {[
-              { t: "Finalize Q3 Compliance Report", due: "Due in 2 hours", tag: "Urgent" },
-              { t: "Finance Q3 Compliance Report", due: "Due in 5 hours", tag: "Medium" },
-              { t: "Finalize Q3 Compliance Report", due: "Due tomorrow", tag: "Low" },
-              { t: "Finalize Q3 Compliance Report", due: "Due in 2 days", tag: "Low" },
+              {
+                t: "Finalize Q3 Compliance Report",
+                due: "Due in 2 hours",
+                tag: "Urgent",
+              },
+              {
+                t: "Finance Q3 Compliance Report",
+                due: "Due in 5 hours",
+                tag: "Medium",
+              },
+              {
+                t: "Finalize Q3 Compliance Report",
+                due: "Due tomorrow",
+                tag: "Low",
+              },
+              {
+                t: "Finalize Q3 Compliance Report",
+                due: "Due in 2 days",
+                tag: "Low",
+              },
             ].map((x, i) => (
               <div
                 key={i}
@@ -224,7 +357,6 @@ export default function AdminIndex() {
                   <div className="text-xs text-gray-500">{x.due}</div>
                 </div>
 
-                {/* ✅ tags less yellow */}
                 <span
                   className="shrink-0 rounded-full px-2 py-1 text-[11px] font-semibold border"
                   style={{
@@ -240,13 +372,36 @@ export default function AdminIndex() {
           </div>
         </Card>
 
-        <Card title="Recent Activity" right={<span className="text-xs text-gray-400">⋯</span>}>
+        <Card
+          title="Recent Activity"
+          right={<span className="text-xs text-gray-400">⋯</span>}
+        >
           <div className="space-y-3">
             {[
-              { name: "Sarah M.", msg: "Uploaded a new client profile", time: "10 mins ago", icon: "👤" },
-              { name: "John D.", msg: "Submitted a new invoice", time: "45 mins ago", icon: "🧾" },
-              { name: "System", msg: "Automatically archived 12 items", time: "2 hours ago", icon: "⚙️" },
-              { name: "Elena R.", msg: "Added a comment on Q3 compliance", time: "1 day ago", icon: "💬" },
+              {
+                name: "Sarah M.",
+                msg: "Uploaded a new client profile",
+                time: "10 mins ago",
+                icon: "👤",
+              },
+              {
+                name: "John D.",
+                msg: "Submitted a new invoice",
+                time: "45 mins ago",
+                icon: "🧾",
+              },
+              {
+                name: "System",
+                msg: "Automatically archived 12 items",
+                time: "2 hours ago",
+                icon: "⚙️",
+              },
+              {
+                name: "Elena R.",
+                msg: "Added a comment on Q3 compliance",
+                time: "1 day ago",
+                icon: "💬",
+              },
             ].map((a, i) => (
               <div key={i} className="flex items-start gap-3">
                 <div
