@@ -10,7 +10,6 @@ export default function Layouts() {
   // ✅ Pages where we don't want Nav/Sidebar/Footer
   const hideLayoutOnPaths = ["/login", "/register"];
 
-  // ✅ Match exact path OR sub-paths (optional but helpful)
   const shouldHideLayout = hideLayoutOnPaths.some(
     (path) =>
       location.pathname === path || location.pathname.startsWith(path + "/")
@@ -21,18 +20,24 @@ export default function Layouts() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <Nav />
-
-      <div className="flex flex-1">
+    <div className="min-h-[100dvh] bg-gray-50">
+      {/* ✅ Desktop fixed sidebar (Tailwind width only) */}
+      <div className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-40 lg:block lg:w-[270px]">
         <SideBar />
-
-        <main className="flex-1 p-4">
-          <Outlet />
-        </main>
       </div>
 
-      <Footer />
+      {/* ✅ Main content (desktop shifted by sidebar width) */}
+      <div className="flex min-h-[100dvh] flex-col lg:ml-[270px]">
+        <Nav />
+
+        <main className="flex-1">
+          <div className="w-full px-2 py-2 sm:px-3 sm:py-3">
+            <Outlet />
+          </div>
+        </main>
+
+        <Footer />
+      </div>
     </div>
   );
 }

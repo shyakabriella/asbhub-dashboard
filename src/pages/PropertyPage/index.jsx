@@ -21,8 +21,23 @@ export default function PropertyPage() {
 
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // ✅ Tabs list (Home sections)
-  const HOME_SECTIONS = useMemo(
+  // ✅ Read role safely (same style as sidebar)
+  const role = useMemo(() => {
+    const raw =
+      localStorage.getItem("auth_user") || sessionStorage.getItem("auth_user");
+
+    if (!raw) return "admin";
+
+    try {
+      const user = JSON.parse(raw);
+      return String(user?.role || "admin").toLowerCase();
+    } catch {
+      return "admin";
+    }
+  }, []);
+
+  // ✅ All tabs
+  const ALL_HOME_SECTIONS = useMemo(
     () => [
       { id: "home-section-one", label: "🏠 Home Section One", component: <HomeSectionOne /> },
       { id: "home-about", label: "ℹ️ Home About", component: <HomeAbout /> },
@@ -35,18 +50,46 @@ export default function PropertyPage() {
     []
   );
 
-  // ✅ default tab
-  const defaultTab = HOME_SECTIONS[0].id;
+  // ✅ Manager sees only Home Hotel Room
+  const HOME_SECTIONS = useMemo(() => {
+    if (role === "manager") {
+      return ALL_HOME_SECTIONS.filter((s) => s.id === "home-hotel-room");
+    }
+    return ALL_HOME_SECTIONS;
+  }, [ALL_HOME_SECTIONS, role]);
 
-  const [activeTab, setActiveTab] = useState(searchParams.get("tab") || defaultTab);
+  // ✅ default tab (safe fallback)
+  const defaultTab = HOME_SECTIONS[0]?.id || "home-hotel-room";
 
-  // ✅ sync tab with URL
+  const [activeTab, setActiveTab] = useState(() => {
+    const tabFromUrl = searchParams.get("tab");
+    const isAllowed = HOME_SECTIONS.some((s) => s.id === tabFromUrl);
+    return isAllowed ? tabFromUrl : defaultTab;
+  });
+
+  // ✅ sync tab with URL + role permissions
   useEffect(() => {
     const tabFromUrl = searchParams.get("tab");
-    if (tabFromUrl) setActiveTab(tabFromUrl);
-  }, [searchParams]);
+    const isAllowed = HOME_SECTIONS.some((s) => s.id === tabFromUrl);
+
+    if (tabFromUrl && isAllowed) {
+      setActiveTab(tabFromUrl);
+      return;
+    }
+
+    // If URL tab is missing/invalid (or manager tries another tab), force default
+    setActiveTab(defaultTab);
+
+    if (tabFromUrl !== defaultTab) {
+      setSearchParams({ tab: defaultTab }, { replace: true });
+    }
+  }, [searchParams, HOME_SECTIONS, defaultTab, setSearchParams]);
 
   const openTab = (id) => {
+    // extra safety
+    const isAllowed = HOME_SECTIONS.some((s) => s.id === id);
+    if (!isAllowed) return;
+
     setActiveTab(id);
     setSearchParams({ tab: id });
   };
@@ -65,8 +108,10 @@ export default function PropertyPage() {
         </div>
 
         <div
-          className="h-2 w-full sm:w-[240px] rounded-full"
-          style={{ background: `linear-gradient(90deg, ${COLORS.purple} 0%, ${COLORS.gold} 100%)` }}
+          className="h-2 w-full rounded-full sm:w-[240px]"
+          style={{
+            background: `linear-gradient(90deg, ${COLORS.purple} 0%, ${COLORS.gold} 100%)`,
+          }}
         />
       </div>
 
@@ -78,12 +123,12 @@ export default function PropertyPage() {
             <div className="text-xs text-gray-500">Choose what to edit</div>
           </div>
 
-          <div className="p-2 flex flex-col gap-2">
+          <div className="flex flex-col gap-2 p-2">
             {HOME_SECTIONS.map((s) => (
               <button
                 key={s.id}
                 onClick={() => openTab(s.id)}
-                className={`w-full text-left rounded-xl px-3 py-2 text-sm font-semibold transition ${
+                className={`w-full rounded-xl px-3 py-2 text-left text-sm font-semibold transition ${
                   activeTab === s.id
                     ? "bg-[rgba(189,159,117,0.16)] text-gray-900"
                     : "bg-white text-gray-700 hover:bg-gray-50"
@@ -97,12 +142,12 @@ export default function PropertyPage() {
 
         {/* RIGHT CONTENT */}
         <div className="rounded-2xl border border-gray-200 bg-white lg:col-span-3">
-          <div className="border-b border-gray-100 px-4 py-3 flex items-center justify-between">
-            <div className="font-semibold text-gray-900">{current.label}</div>
+          <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+            <div className="font-semibold text-gray-900">{current?.label}</div>
             <div className="text-xs text-gray-500">Edit and save this section</div>
           </div>
 
-          <div className="p-4">{current.component}</div>
+          <div className="p-4">{current?.component}</div>
         </div>
       </div>
     </div>

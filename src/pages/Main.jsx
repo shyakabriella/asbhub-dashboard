@@ -21,7 +21,6 @@ export default function Main() {
       import.meta.env.VITE_API_BASE_URL ||
       "http://127.0.0.1:8000";
 
-    // if user sets VITE_API_BASE_URL=http://.../api, remove /api for login route builder below
     return raw.replace(/\/api\/?$/, "").replace(/\/$/, "");
   }, []);
 
@@ -52,8 +51,8 @@ export default function Main() {
     secondary.removeItem("remember_auth");
 
     // ✅ Save new auth data
-    primary.setItem("access_token", token); // standard key
-    primary.setItem("auth_token", token);   // backward compatibility
+    primary.setItem("access_token", token);
+    primary.setItem("auth_token", token); // backward compatibility
     primary.setItem("auth_user", JSON.stringify(user));
     primary.setItem("remember_auth", remember ? "1" : "0");
   };
@@ -110,7 +109,6 @@ export default function Main() {
       }
 
       saveAuth({ token, user, remember });
-
       redirectByRole(user.role);
     } catch (err) {
       setErrorMsg(err?.message || "Failed to fetch. Check backend + API URL.");
@@ -120,30 +118,30 @@ export default function Main() {
   };
 
   return (
-    <div className="h-[100dvh] w-screen bg-gray-100 flex items-center justify-center p-3 overflow-hidden">
-      <div className="w-full max-w-6xl h-full md:h-[92dvh] bg-white shadow-lg border rounded-xl overflow-hidden">
-        <div className="h-full grid grid-cols-1 md:grid-cols-2">
+    <div className="min-h-[100dvh] w-full bg-gray-100 p-1 sm:p-2">
+      {/* ✅ full width, only tiny outer spacing */}
+      <div className="w-full min-h-[calc(100dvh-8px)] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg sm:min-h-[calc(100dvh-16px)]">
+        <div className="grid min-h-[inherit] grid-cols-1 md:grid-cols-2">
           {/* Left side */}
-          <div className="relative h-full hidden md:block">
+          <div className="relative hidden h-full md:block">
             <div
               className="absolute inset-0 bg-cover bg-center"
               style={{
-                backgroundImage:
-                  "url('https://images.unsplash.com/photo-1549366021-9f761d040a94?auto=format&fit=crop&w=1400&q=80')",
+                backgroundImage: "url('/oly.jpg')",
               }}
             />
             <div className="absolute inset-0 bg-black/45" />
 
-            <div className="absolute left-6 top-6 flex items-center gap-2 text-amber-400">
-              <div className="h-10 w-10 rounded-lg border border-amber-400/40 flex items-center justify-center">
-                <span className="text-xl font-bold">A</span>
+            <div className="absolute left-5 top-5 flex items-center gap-2 text-white">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/30 bg-[#8B0000]">
+                <span className="text-xl font-bold">O</span>
               </div>
-              <div className="font-semibold tracking-wide">ASHBHUB</div>
+              <div className="font-semibold tracking-wide">Olympic Hotel</div>
             </div>
 
-            <div className="absolute bottom-8 left-6 right-6 text-white">
-              <div className="text-2xl font-bold tracking-wide">ASHBHUB</div>
-              <p className="mt-2 text-sm text-white/85 max-w-md">
+            <div className="absolute bottom-6 left-5 right-5 text-white">
+              <div className="text-2xl font-bold tracking-wide">Olympic Hotel</div>
+              <p className="mt-2 max-w-md text-sm text-white/85">
                 Orchestrating unforgettable African Journey <br />
                 with precision and care
               </p>
@@ -151,39 +149,23 @@ export default function Main() {
           </div>
 
           {/* Right side */}
-          <div className="h-full flex items-center justify-center p-4 md:p-8">
-            <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-5 md:p-6 shadow-sm">
-              {/* Partnership logos */}
-              <div className="flex items-center justify-center gap-4 pb-4 border-b border-gray-100">
-                <div className="flex items-center gap-2">
-                  <img
-                    src="/ash.png"
-                    alt="ASHBHUB Logo"
-                    className="h-10 w-auto object-contain"
-                  />
-                  <div className="leading-tight">
-                    <div className="text-sm font-semibold text-gray-900">ASHBHUB</div>
-                    <div className="text-[11px] text-gray-500">Partner</div>
-                  </div>
-                </div>
-
-                <div className="h-8 w-px bg-gray-200" />
-
-                <div className="flex items-center gap-2">
-                  <img
-                    src="/royal.png"
-                    alt="Royal Crown Hotel Logo"
-                    className="h-10 w-auto object-contain"
-                  />
-                  <div className="leading-tight">
-                    <div className="text-sm font-semibold text-gray-900">ROYALCROWN</div>
-                    <div className="text-[11px] text-gray-500">Hotel</div>
-                  </div>
+          <div className="flex h-full items-center justify-center p-2 sm:p-3 md:p-4">
+            <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5 md:p-6">
+              {/* ✅ Single Olympic logo header */}
+              <div className="flex items-center justify-center gap-3 border-b border-gray-100 pb-3">
+                <img
+                  src="/logo.png"
+                  alt="Olympic Hotel Logo"
+                  className="h-10 w-auto object-contain"
+                />
+                <div className="leading-tight text-center">
+                  <div className="text-base font-semibold text-gray-900">Olympic Hotel</div>
+                  <div className="text-[11px] text-gray-500">Hotel</div>
                 </div>
               </div>
 
               <h1 className="mt-4 text-2xl font-bold text-gray-900">
-                Login in to your account
+                Log in to your account
               </h1>
               <p className="mt-1 text-sm text-gray-500">
                 Welcome back! Enter your credentials
@@ -195,20 +177,20 @@ export default function Main() {
                 </div>
               )}
 
-              <form onSubmit={onSubmit} className="mt-5 space-y-3">
+              <form onSubmit={onSubmit} className="mt-4 space-y-3">
                 {/* Email or Phone */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
                     Email or phone
                   </label>
-                  <div className="mt-2 relative">
+                  <div className="relative mt-2">
                     <input
                       value={identifier}
                       onChange={(e) => setIdentifier(e.target.value)}
                       type="text"
                       autoComplete="username"
                       placeholder="phone or email"
-                      className="w-full rounded-lg border border-gray-200 bg-white px-4 py-3 pr-10 outline-none focus:border-amber-400"
+                      className="w-full rounded-lg border border-gray-200 bg-white px-4 py-3 pr-10 outline-none focus:border-[#8B0000] focus:ring-2 focus:ring-[#8B0000]/10"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
                       👤
@@ -221,13 +203,13 @@ export default function Main() {
                   <label className="block text-sm font-medium text-gray-700">
                     Password
                   </label>
-                  <div className="mt-2 relative">
+                  <div className="relative mt-2">
                     <input
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       type={showPass ? "text" : "password"}
                       autoComplete="current-password"
-                      className="w-full rounded-lg border border-gray-200 bg-white px-4 py-3 pr-10 outline-none focus:border-amber-400"
+                      className="w-full rounded-lg border border-gray-200 bg-white px-4 py-3 pr-10 outline-none focus:border-[#8B0000] focus:ring-2 focus:ring-[#8B0000]/10"
                     />
                     <button
                       type="button"
@@ -245,14 +227,17 @@ export default function Main() {
                   <label className="flex items-center gap-2 text-sm text-gray-600">
                     <input
                       type="checkbox"
-                      className="h-4 w-4"
+                      className="h-4 w-4 accent-[#8B0000]"
                       checked={remember}
                       onChange={(e) => setRemember(e.target.checked)}
                     />
                     Remember me
                   </label>
 
-                  <button type="button" className="text-sm text-amber-500 hover:underline">
+                  <button
+                    type="button"
+                    className="text-sm text-[#8B0000] hover:text-[#9F0712] hover:underline"
+                  >
                     Forgot password?
                   </button>
                 </div>
@@ -260,21 +245,16 @@ export default function Main() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full rounded-lg bg-amber-500 py-3 font-semibold text-white hover:bg-amber-600 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="w-full rounded-lg bg-[#8B0000] py-3 font-semibold text-white transition hover:bg-[#9F0712] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {loading ? "Logging in..." : "Login →"}
                 </button>
 
-                <div className="flex items-center justify-between text-sm text-gray-600">
-                  <span>Don’t have an account?</span>
-                  <Link to="/register" className="text-amber-500 hover:underline">
-                    Register
-                  </Link>
-                </div>
+               
 
-                <div className="pt-3 text-center text-xs text-gray-400">
-                  ASHBHUB ©2025. Authorized personal only <br />
-                  <a className="underline" href="#">
+                <div className="pt-2 text-center text-xs text-gray-400">
+                  ASHBHUB ©2025. Authorized personnel only <br />
+                  <a className="text-[#8B0000] underline hover:text-[#9F0712]" href="#">
                     Contact IT Support
                   </a>
                 </div>
