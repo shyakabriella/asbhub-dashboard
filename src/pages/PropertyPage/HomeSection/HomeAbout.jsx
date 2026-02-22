@@ -172,7 +172,7 @@ export default function HomeAbout() {
             onChange={(e) => onChange("description", e.target.value)}
             rows={4}
             className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[rgba(47,13,52,0.18)]"
-            placeholder="Welcome to Royal Crown Hotel..."
+            placeholder="Welcome toOlympic Hotel..."
           />
         </div>
 

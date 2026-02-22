@@ -549,7 +549,7 @@ function PropertyForm({
                   name="propertyName"
                   value={form?.propertyName || ""}
                   onChange={wrappedOnChange}
-                  placeholder="e.g. Royal Crown Hotel"
+                  placeholder="e.g.Olympic Hotel"
                 />
               </div>
 

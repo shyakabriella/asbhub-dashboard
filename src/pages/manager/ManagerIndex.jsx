@@ -249,7 +249,7 @@ export default function ManagerIndex() {
 
         {/* Footer */}
         <div className="mt-8 text-center text-xs text-gray-400">
-          ASHBHUB & ROYAL CROWN HOTEL ©2026 • Manager Portal
+          ASHBHUB &Olympic Hotel ©2026 • Manager Portal
         </div>
       </div>
     </div>
